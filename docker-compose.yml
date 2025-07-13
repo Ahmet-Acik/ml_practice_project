@@ -1,0 +1,53 @@
+# MLOps Pipeline Configuration
+# Production-ready deployment with monitoring and CI/CD
+
+version: '3.8'
+services:
+  # Model API Service
+  model-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/models/best_student_performance_model.pkl
+      - MONITORING_ENABLED=true
+    volumes:
+      - ./models:/models
+    
+  # Model Monitoring
+  monitoring:
+    image: prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    
+  # Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
+  # Model Retraining Service
+  retraining:
+    build: ./retraining
+    environment:
+      - SCHEDULE_INTERVAL=0 2 * * 0  # Weekly retraining
+      - PERFORMANCE_THRESHOLD=0.90   # Retrain if R² drops below 0.90
+    volumes:
+      - ./data:/data
+      - ./models:/models
+
+volumes:
+  grafana-storage:
+
+# Key MLOps Components:
+# 1. Automated testing for model quality
+# 2. Model versioning and rollback capability  
+# 3. Performance monitoring and alerting
+# 4. Automated retraining pipelines
+# 5. A/B testing for model improvements
